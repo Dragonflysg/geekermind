@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gitmind · Local Mindmap</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ===================== TOP TOOLBAR ===================== -->
+  <div id="toolbar">
+    <button id="btn-open" title="Open mind map (Ctrl+O)"><i class="fa-solid fa-folder-open"></i></button>
+    <button id="btn-new" title="New mind map (Ctrl+N)"><i class="fa-solid fa-file-circle-plus"></i></button>
+    <div class="divider"></div>
+    <button id="btn-add-root" title="Add root node (double-click canvas)"><i class="fa-solid fa-circle-plus"></i></button>
+    <button id="btn-add-child" title="Add child (Tab)"><i class="fa-solid fa-diagram-project"></i></button>
+    <button id="btn-add-sibling" title="Add sibling (Enter)"><i class="fa-solid fa-plus"></i></button>
+    <div class="divider"></div>
+    <button id="btn-image" title="Attach image to selected node"><i class="fa-solid fa-image"></i></button>
+    <button id="btn-emoji" title="Attach emoji"><i class="fa-solid fa-face-smile"></i></button>
+    <button id="btn-icon" title="Attach FontAwesome icon"><i class="fa-solid fa-icons"></i></button>
+    <div class="divider"></div>
+    <button id="btn-bg" title="Change background color"><i class="fa-solid fa-fill-drip"></i></button>
+    <button id="btn-theme" title="Toggle light/dark theme"><i class="fa-solid fa-moon"></i></button>
+    <div class="divider"></div>
+    <button id="btn-undo" title="Undo (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
+    <button id="btn-redo" title="Redo (Ctrl+Y)"><i class="fa-solid fa-rotate-right"></i></button>
+    <div class="divider"></div>
+    <button id="btn-delete" title="Delete selected (Del)"><i class="fa-solid fa-trash"></i></button>
+    <button id="btn-clear" title="Clear all nodes in current map"><i class="fa-solid fa-eraser"></i></button>
+  </div>
+
+  <!-- ===================== CANVAS ===================== -->
+  <div id="canvas">
+    <svg id="svg-layer">
+      <defs>
+        <filter id="node-shadow" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.18" />
+        </filter>
+        <marker id="arrow-end" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0.5 1 L 9 5 L 0.5 9 Z" />
+        </marker>
+        <marker id="arrow-end-sel" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0.5 1 L 9 5 L 0.5 9 Z" />
+        </marker>
+      </defs>
+      <g class="zoom-group">
+        <g class="links"></g>
+        <path id="temp-link" class="hidden"></path>
+      </g>
+    </svg>
+    <div id="html-layer">
+      <div class="zoom-group">
+        <div class="nodes"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== ZOOM CONTROL ===================== -->
+  <div id="zoom-control">
+    <span id="map-name"><i class="fa-solid fa-brain"></i> Mind Map</span>
+    <button id="zoom-out" title="Zoom out"><i class="fa-solid fa-minus"></i></button>
+    <input type="range" id="zoom-slider" min="10" max="400" value="100" />
+    <button id="zoom-in" title="Zoom in"><i class="fa-solid fa-plus"></i></button>
+    <span id="zoom-value">100%</span>
+    <button id="zoom-fit" title="Fit to screen"><i class="fa-solid fa-expand"></i></button>
+  </div>
+
+  <!-- ===================== FORMAT TOOLBAR (on node dbl-click) ===================== -->
+  <div id="format-toolbar" class="popup hidden">
+    <select id="fmt-size" title="Font size">
+      <option>10</option><option>12</option><option>14</option>
+      <option selected>16</option><option>18</option><option>20</option>
+      <option>24</option><option>28</option><option>32</option><option>40</option>
+    </select>
+    <button id="fmt-bold" title="Bold"><i class="fa-solid fa-bold"></i></button>
+    <button id="fmt-italic" title="Italic"><i class="fa-solid fa-italic"></i></button>
+    <button id="fmt-strike" title="Strikethrough"><i class="fa-solid fa-strikethrough"></i></button>
+    <button id="fmt-underline" title="Underline"><i class="fa-solid fa-underline"></i></button>
+    <label class="color-btn" title="Text color">
+      <span><i class="fa-solid fa-a"></i><span class="bar" id="fmt-color-bar" style="background:#d34040"></span></span>
+      <input type="color" id="fmt-color" value="#d34040" />
+    </label>
+    <label class="color-btn" title="Node background">
+      <span><i class="fa-solid fa-highlighter"></i><span class="bar" id="fmt-bg-bar" style="background:#fff176"></span></span>
+      <input type="color" id="fmt-bg" value="#fff176" />
+    </label>
+    <button id="fmt-clear" title="Clear formatting"><i class="fa-solid fa-broom"></i></button>
+  </div>
+
+  <!-- ===================== CONTEXT MENU ===================== -->
+  <div id="context-menu" class="popup hidden">
+    <div class="ctx-item" data-action="add-child"><i class="fa-solid fa-diagram-project"></i> Add child <span class="kbd">Tab</span></div>
+    <div class="ctx-item" data-action="add-sibling"><i class="fa-solid fa-plus"></i> Add sibling <span class="kbd">Enter</span></div>
+    <div class="ctx-item" data-action="add-properties"><i class="fa-solid fa-clipboard-list"></i> Add properties</div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item" data-action="reparent"><i class="fa-solid fa-link"></i> Connect to a parent…</div>
+    <div class="ctx-item" data-action="reverse-arrow"><i class="fa-solid fa-right-left"></i> Reverse arrow direction <span class="kbd">R</span></div>
+    <div class="ctx-item" data-action="disconnect"><i class="fa-solid fa-link-slash"></i> Disconnect from parent</div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item" data-action="add-image"><i class="fa-solid fa-image"></i> Attach image</div>
+    <div class="ctx-item" data-action="add-emoji"><i class="fa-solid fa-face-smile"></i> Attach emoji</div>
+    <div class="ctx-item" data-action="add-icon"><i class="fa-solid fa-icons"></i> Attach icon</div>
+    <div class="ctx-item" data-action="remove-media"><i class="fa-solid fa-eraser"></i> Remove media</div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item" data-action="edit"><i class="fa-solid fa-pen"></i> Edit text</div>
+    <div class="ctx-item danger" data-action="delete-solo"><i class="fa-solid fa-trash-can"></i> Delete (keep children)</div>
+    <div class="ctx-item danger" data-action="delete"><i class="fa-solid fa-trash"></i> Delete with children <span class="kbd">Del</span></div>
+  </div>
+
+  <!-- ===================== EMOJI PICKER ===================== -->
+  <div id="emoji-picker" class="popup picker hidden">
+    <div class="picker-head">
+      <input type="text" id="emoji-search" placeholder="Search emoji..." />
+    </div>
+    <div class="picker-tabs" id="emoji-tabs"></div>
+    <div class="picker-grid" id="emoji-grid"></div>
+  </div>
+
+  <!-- ===================== ICON PICKER ===================== -->
+  <div id="icon-picker" class="popup picker hidden">
+    <div class="picker-head">
+      <input type="text" id="icon-search" placeholder="Search FontAwesome..." />
+    </div>
+    <div class="picker-grid" id="icon-grid"></div>
+  </div>
+
+  <!-- ===================== BACKGROUND PICKER ===================== -->
+  <div id="bg-picker" class="popup hidden">
+    <div class="bg-head">Background color</div>
+    <div class="bg-presets" id="bg-presets"></div>
+    <div class="bg-custom">
+      <label>Custom: <input type="color" id="bg-custom-input" /></label>
+    </div>
+  </div>
+
+  <!-- Hidden inputs -->
+  <input type="file" id="image-input" accept="image/*" style="display:none" />
+
+  <!-- ===================== MODAL BACKDROP + WELCOME ===================== -->
+  <div id="modal-backdrop" class="hidden"></div>
+
+  <div id="welcome" class="modal hidden">
+    <div class="welcome-brand"><i class="fa-solid fa-brain"></i> Gitmind</div>
+    <div class="welcome-sub">Your local mindmap workspace</div>
+    <div class="welcome-actions">
+      <button class="welcome-btn" id="welcome-new">
+        <i class="fa-solid fa-file-circle-plus"></i>
+        <span>New mind map</span>
+        <small>Create a fresh project</small>
+      </button>
+      <button class="welcome-btn" id="welcome-open">
+        <i class="fa-solid fa-folder-open"></i>
+        <span>Open existing</span>
+        <small>Choose from saved projects</small>
+      </button>
+    </div>
+  </div>
+
+  <!-- ===================== NEW PROJECT MODAL ===================== -->
+  <div id="new-modal" class="modal hidden">
+    <div class="modal-head">
+      <h3><i class="fa-solid fa-file-circle-plus"></i> New mind map</h3>
+      <button class="modal-close" data-close="new-modal"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <label>Project name</label>
+      <input type="text" id="new-name" placeholder="My mind map" maxlength="64" autocomplete="off" />
+      <div class="modal-hint">A folder will be created in <code>PROJECTS\</code> to hold this map and its images.</div>
+      <div class="modal-error hidden" id="new-error"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-secondary" data-close="new-modal">Cancel</button>
+      <button class="btn-primary" id="new-create">Create</button>
+    </div>
+  </div>
+
+  <!-- ===================== OPEN PROJECT MODAL ===================== -->
+  <div id="open-modal" class="modal modal-wide hidden">
+    <div class="modal-head">
+      <h3><i class="fa-solid fa-folder-open"></i> Open mind map</h3>
+      <div class="modal-head-actions">
+        <button class="btn-primary btn-small" id="open-head-new"><i class="fa-solid fa-plus"></i> New MindMap</button>
+        <button class="modal-close" data-close="open-modal"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="open-search">
+        <input type="text" id="open-search" placeholder="Filter by name..." />
+      </div>
+      <div class="open-table-wrap">
+        <table class="open-table">
+          <thead>
+            <tr>
+              <th class="fav">Fav</th>
+              <th>Name</th>
+              <th class="num">Nodes</th>
+              <th>Modified</th>
+              <th class="actions"></th>
+            </tr>
+          </thead>
+          <tbody id="open-tbody"></tbody>
+        </table>
+        <div id="open-empty" class="open-empty hidden">
+          <i class="fa-solid fa-folder-open"></i>
+          <p>No mind maps yet</p>
+          <button class="btn-primary" id="open-empty-new">Create one</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== PROPERTIES SIDEBAR ===================== -->
+  <aside id="properties-sidebar" class="hidden">
+    <div id="props-handle" title="Drag to resize"><i class="fa-solid fa-grip-lines-vertical"></i></div>
+    <div class="props-head">
+      <h3><i class="fa-solid fa-clipboard-list"></i> Properties</h3>
+    </div>
+    <div class="props-body">
+      <div class="props-field">
+        <label for="props-details">Details</label>
+        <textarea id="props-details" placeholder="Add details..."></textarea>
+      </div>
+      <div class="props-field">
+        <label for="props-notes">Special Notes</label>
+        <textarea id="props-notes" placeholder="Add special notes..."></textarea>
+      </div>
+    </div>
+    <div class="props-foot">
+      <button class="btn-secondary" id="props-close">Close</button>
+    </div>
+  </aside>
+
+  <!-- Toast -->
+  <div id="toast" class="hidden"></div>
+
+  <!-- Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script src="app.js"></script>
+</body>
+</html>
